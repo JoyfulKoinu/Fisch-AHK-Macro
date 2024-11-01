@@ -1,7 +1,7 @@
 ; Change the Control value to whatever your rod's Control value is 
-Control := 0.05
+Control := 0.01
 ; Don't edit anything beyond this point
-barWidth := Floor(96 + (Control*326.67))
+barWidth := Floor(90 + (Control*326.67))
 
 toggle := false
 mouseDown := False
@@ -18,17 +18,17 @@ f::  ; When "F" key is pressed
     toggle := !toggle  ; Toggle the state
     if (toggle) {
         ; Start the loop in a separate thread
-        SetTimer(Main, 0)
+        SetTimer, Main, 0
     } else {
         ; Stop the loop by setting the timer off
-        SetTimer(Main, Off)
+        SetTimer, Main, Off
     }
 return
 
 Main:
     global barWidth, barLeftMargin, barRightMargin, lastBarPos, lastFishPos, mouseDown
     if (toggle) {
-        PixelSearch(FishX, FishY, 246, 533, 569, 533, 0x434b5b, 3)
+        PixelSearch, FishX, FishY, 246, 533, 569, 533, 0x434b5b, 3, FastRGB
         if (ErrorLevel = 0){ ; ErrorLevel = 0 if fish is detected
             fishVelocity := FishX - lastFishPos
 
@@ -37,15 +37,15 @@ Main:
             ; Basically when we are able to keep the fish fully in the bar without input
             if (FishX <= barLeftMargin or FishX >= barRightMargin){
                 if (FishX <= barLeftMargin){ ; Fish is in the left margins
-                    tooltip("ALL THE WAY LEFT")
+                    tooltip ALL THE WAY LEFT
                     if (mouseDown) {
-                        Click Up 
-                        mouseDown := False ; Update the variable to indicate mouse is not down
+                        Send, {Space Up} 
+                        mouseDown := False ; Update the variable to indicate mouse is not Down
                     }
                 } else { ; Fish is in the right margins
-                    tooltip("ALL THE WAY RIGHT")
+                    tooltip ALL THE WAY RIGHT
                     if (!mouseDown){ 
-                        Click Down
+                        Send, {Space Down}
                         mouseDown := True
                     }
                 }
@@ -54,22 +54,22 @@ Main:
                 if ((FishX + fishVelocity) <= barLeftMargin or (FishX + fishVelocity) >= barRightMargin){
                     if ((FishX + fishVelocity) <= barLeftMargin){
                         ; Fish is approaching the left margins
-                        tooltip("APPROACHING LEFT")
+                        tooltip APPROACHING LEFT
                         if (mouseDown) {
-                            Click Up 
-                            mouseDown := False ; Update the variable to indicate mouse is not down
+                            Send, {Space Up} 
+                            mouseDown := False ; Update the variable to indicate mouse is not Down
                         }
                     } else { ; Fish is approaching the right margins
-                        tooltip("APPROACHING RIGHT")
+                        tooltip APPROACHING RIGHT
                         if (!mouseDown){ 
-                            Click Down
+                            Send, {Space Down}
                             mouseDown := True
                         }
                     }
                 } else {
                     ; Fish is somewhere not in bounds
                     ; Detect where the white reel bar is
-                    PixelSearch(BarX, BarY, 246, 533, 569, 533, 0xf1f1f1, 20) ; Checks the screen for a white pixel (the reel bar)
+                    PixelSearch, BarX, BarY, 246, 533, 569, 533, 0xf1f1f1, 20, FastRGB ; Checks the screen for a white pixel (the reel bar)
                     if (ErrorLevel = 0){
                         ; Bar is visible, fish is in the bar
                         ; This code will try to keep the fish centered
@@ -77,36 +77,36 @@ Main:
                         centerOfBar := BarX + (BarWidth/2)
                         if (FishX >= centerOfBar){ 
                             ; Fish is on the right of the bar, go right to center it
-                            tooltip("Centering Right")
-                            Click Down
-                            Sleep(15 + ((FishX - centerOfBar) * 3))
-                            Click Up
-                            mouseDown := False ; Mouse is down
+                            tooltip Centering Right
+                            Send, {Space Down}
+                            Sleep, (1 + ((FishX - centerOfBar) * 2.5))
+                            Send, {Space Up}
+                            mouseDown := False ; Mouse is Down
                         } else if (FishX < centerOfBar){ 
                             ; Fish is on the left of the bar, go left to center it
-                            tooltip("Centering Left")
-                            Click Up
-                            Sleep(25 + ((centerOfBar - FishX) * 2))
-                            Click Down
-                            Sleep(15)
-                            Click Up
-                            mouseDown := False ; Mouse is up
+                            tooltip Centering Left
+                            Send, {Space Up}
+                            Sleep, (1 + ((centerOfBar - FishX) * 1.75))
+                            Send, {Space Down}
+                            Sleep, (1)
+                            Send, {Space Up}
+                            mouseDown := False ; Mouse is Up
                         }
                     } else {
                         ; Bar is not visible, get the fish in the bar
                         if (FishX < lastBarPos){ 
                             ; Fish is on the left of the last known pos, go left
-                            tooltip("Lost Bar left")
+                            tooltip Lost Bar left
                             if (mouseDown) {
-                                Click Up
-                                mouseDown := False ; Mouse is up
+                                Send, {Space Up}
+                                mouseDown := False ; Mouse is Up
                             }
                         } else { 
                             ; Fish is on the right of the last known pos, go right
-                            tooltip("Lost Bar right")
+                            tooltip Lost Bar right
                             if (!mouseDown) {
-                                Click Down
-                                mouseDown := True ; Mouse is down
+                                Send, {Space Down}
+                                mouseDown := True ;Mouse is Down
                             }
                         }
                     }
@@ -117,32 +117,32 @@ Main:
         } else {
             ; Fish is not on line, cast rod
             Tooltip Casting
-            Sleep 1000
+            Sleep 1700
             Click, Down, 100, 400
-            Sleep 2000
+            Sleep 1000
             Click, Up, 100, 400
-            Sleep 2000
+            Sleep 1000
             ; Begin shaking the line
             Tooltip Shaking
             Send \
             StartTime := A_TickCount
             Loop, {
-                Send {down}{enter}
+                Send {down}{down}{enter}
                 ; check if there is a white pixel on the screen, detects if your reeling in a fish
                 PixelSearch,,, 246, 533, 569, 533, 0xf1f1f1, 20, FastRGB 
-                If (ErrorLevel = 0) { 
+                If (ErrorLevel = 0) {
                     ; 0 if it finds a white pixel, 1 if it doesnt
                     Break
                 }
                 if (!toggle){
                     Break
                 }
-                if(A_TickCount - StartTime >= 60000){ ; cancel shaking after 60s, failsafe
+                if(A_TickCount - StartTime >= 30000){ ;cancel shaking after 60s, failsafe
                     Break  
                 }
-                Sleep 50
+                Sleep .5
             }
-            ; Fish is on line, restart loop
+            ;Fish is on line, restart loop
         }
     }
 return
